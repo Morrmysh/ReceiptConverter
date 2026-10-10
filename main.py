@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from openpyxl import load_workbook
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
@@ -9,8 +9,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 import datetime
+import sys
 
-def excel_to_pdf(excel_file_path):
+pdfmetrics.registerFont(TTFont('TimesNewRoman', 'assets/times.ttf'))
+pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', 'assets/timesbd.ttf'))
+
+def receipt_to_pdf(excel_file_path):
     try:
         wb = load_workbook(excel_file_path)
         sheet = wb.active
@@ -27,8 +31,6 @@ def excel_to_pdf(excel_file_path):
         pdf.leftMargin = 20
         pdf.rightMargin = 20
 
-        pdfmetrics.registerFont(TTFont('TimesNewRoman', 'assets/times.ttf'))
-        pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', 'assets/timesbd.ttf'))
         header_style = ParagraphStyle(
             name='HeaderStyle',
             fontName='TimesNewRoman',
@@ -43,35 +45,35 @@ def excel_to_pdf(excel_file_path):
             spaceBefore=10,
         )
         cell_style = ParagraphStyle(
-            name='TextStyle',
+            name='CellStyle',
             fontName='TimesNewRoman',
             fontSize=10,
             spaceAfter=10,
-            wordWrap=None,  # 'CJK'
+            wordWrap=None,
             alignment=0,
         )
         cell_style_bold = ParagraphStyle(
-            name='TextStyle',
+            name='CellStyleBold',
             fontName='TimesNewRoman-Bold',
             fontSize=10,
             spaceAfter=10,
-            wordWrap=None,  # 'CJK'
+            wordWrap=None,
             alignment=0,
         )
         center_cell_style = ParagraphStyle(
-            name='TextStyle',
+            name='CenterCellStyle',
             fontName='TimesNewRoman',
             fontSize=10,
             spaceAfter=10,
-            wordWrap=None,  # 'CJK'
+            wordWrap=None,
             alignment=1,
         )
         center_cell_style_bold = ParagraphStyle(
-            name='TextStyle',
+            name='CenterCellStyleBold',
             fontName='TimesNewRoman-Bold',
             fontSize=10,
             spaceAfter=10,
-            wordWrap=None,  # 'CJK'
+            wordWrap=None,
             alignment=1,
         )
 
@@ -109,7 +111,7 @@ def excel_to_pdf(excel_file_path):
         text = Paragraph("Расшифровка по видам услуг", text_style)
         content.append(text)
 
-        excel_data = [[str(cell.value).replace('_x000D_\n', '').replace('None', '') for cell in row] for row in sheet['A12:P25']]
+        excel_data = [[str(cell.value if cell.value is not None else '').replace('_x000D_\n', '') for cell in row] for row in sheet['A12:P25']]
         data = []
         for row in excel_data[:3]:
             data.append([])
@@ -165,21 +167,127 @@ def excel_to_pdf(excel_file_path):
         return pdf_file_path
 
     except Exception as e:
-        tk.messagebox.showerror("Error", str(e))
-    # finally:
-    #     pass
+        error_msg = str(e)
+        print(f"Error in excel_to_pdf: {error_msg}", file=sys.stderr)
+        messagebox.showerror("Error", error_msg)
+        return None
+    finally:
+        if 'wb' in locals():
+            wb.close()
 
 
-def open_file():
-    file_path = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')])
-    if file_path:
-        pdf_file_path = excel_to_pdf(file_path)
-        if pdf_file_path:
-            tk.messagebox.showinfo("Success", f"Квитанция создана: {pdf_file_path}")
+def open_receipt():
+    file_paths = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')], multiple=True)
+    if file_paths:
+        success_count = 0
+        error_count = 0
+        for file_path in file_paths:
+            pdf_file_path = receipt_to_pdf(file_path)
+            if pdf_file_path:
+                success_count += 1
+            else:
+                error_count += 1
+        
+        if success_count > 0:
+            messagebox.showinfo("Success", f"Создано квитанций: {success_count}")
+        if error_count > 0:
+            messagebox.showwarning("Errors", f"Не удалось создать: {error_count} квитанций")
+
+
+def overhaul_to_pdf(excel_file_path):
+    try:
+        wb = load_workbook(excel_file_path)
+        sheet = wb.active
+
+        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        output_folder = os.path.join(os.path.dirname(excel_file_path), "Квитанции капремонт от " + current_date)
+        os.makedirs(output_folder, exist_ok=True)
+        pdf_file_path = os.path.join(output_folder, os.path.basename(excel_file_path).replace('.xlsx', '.pdf'))
+
+        pdf = SimpleDocTemplate(str(pdf_file_path), pagesize=landscape(A4))
+        pdf.topMargin = 10
+        pdf.bottomMargin = 10
+        pdf.leftMargin = 20
+        pdf.rightMargin = 20
+
+        header_style = ParagraphStyle(
+            name='HeaderStyle',
+            fontName='TimesNewRoman',
+            fontSize=14,
+            spaceAfter=12,
+        )
+        text_style = ParagraphStyle(
+            name='TextStyle',
+            fontName='TimesNewRoman',
+            fontSize=12,
+            spaceAfter=10,
+            spaceBefore=10,
+        )
+        cell_style = ParagraphStyle(
+            name='CellStyle',
+            fontName='TimesNewRoman',
+            fontSize=10,
+            spaceAfter=10,
+            wordWrap=None,
+            alignment=0,
+        )
+        cell_style_bold = ParagraphStyle(
+            name='CellStyleBold',
+            fontName='TimesNewRoman-Bold',
+            fontSize=10,
+            spaceAfter=10,
+            wordWrap=None,
+            alignment=0,
+        )
+        center_cell_style = ParagraphStyle(
+            name='CenterCellStyle',
+            fontName='TimesNewRoman',
+            fontSize=10,
+            spaceAfter=10,
+            wordWrap=None,
+            alignment=1,
+        )
+        center_cell_style_bold = ParagraphStyle(
+            name='CenterCellStyleBold',
+            fontName='TimesNewRoman-Bold',
+            fontSize=10,
+            spaceAfter=10,
+            wordWrap=None,
+            alignment=1,
+        )
+
+        content = []
+
+
+        pdf.build(content)
+
+        wb.close()
+        return pdf_file_path
+
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Error in overhaul_to_pdf: {error_msg}", file=sys.stderr)
+        messagebox.showerror("Error", error_msg)
+        return None
 
 
 def open_overhaul():
-    pass
+    file_paths = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')], multiple=True)
+    if file_paths:
+        success_count = 0
+        error_count = 0
+        for file_path in file_paths:
+            pdf_file_path = debug_read_receipt(file_path)
+            if pdf_file_path:
+                success_count += 1
+            else:
+                error_count += 1
+        
+        if success_count > 0:
+            messagebox.showinfo("Success", f"Создано PDF файлов: {success_count}")
+        if error_count > 0:
+            messagebox.showwarning("Errors", f"Не удалось создать: {error_count} файлов")
+
 
 
 # Создание GUI
@@ -190,7 +298,7 @@ root.geometry("300x150")
 # Кнопка для выбора файла
 overhaul_button = tk.Button(root, text="Капремонт", command=open_overhaul)
 overhaul_button.pack(pady=20)
-receipt_button = tk.Button(root, text="Коммунальные платежи", command=open_file)
+receipt_button = tk.Button(root, text="Коммунальные платежи", command=open_receipt)
 receipt_button.pack(pady=20)
 
 # Запуск GUI

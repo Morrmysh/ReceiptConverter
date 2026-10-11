@@ -4,12 +4,13 @@ from openpyxl import load_workbook
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Table
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, PageBreak
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 import datetime
 import sys
+from typing import Any
 
 pdfmetrics.registerFont(TTFont('TimesNewRoman', 'assets/times.ttf'))
 pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', 'assets/timesbd.ttf'))
@@ -202,7 +203,7 @@ def overhaul_to_pdf(excel_file_path):
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
         output_folder = os.path.join(os.path.dirname(excel_file_path), "Квитанции капремонт от " + current_date)
         os.makedirs(output_folder, exist_ok=True)
-        pdf_file_path = os.path.join(output_folder, os.path.basename(excel_file_path).replace('.xlsx', '.pdf'))
+        pdf_file_path = os.path.join(str(output_folder), str(os.path.basename(excel_file_path).replace('.xlsx', '.pdf')))
 
         pdf = SimpleDocTemplate(str(pdf_file_path), pagesize=landscape(A4))
         pdf.topMargin = 10
@@ -210,19 +211,6 @@ def overhaul_to_pdf(excel_file_path):
         pdf.leftMargin = 20
         pdf.rightMargin = 20
 
-        header_style = ParagraphStyle(
-            name='HeaderStyle',
-            fontName='TimesNewRoman',
-            fontSize=14,
-            spaceAfter=12,
-        )
-        text_style = ParagraphStyle(
-            name='TextStyle',
-            fontName='TimesNewRoman',
-            fontSize=12,
-            spaceAfter=10,
-            spaceBefore=10,
-        )
         cell_style = ParagraphStyle(
             name='CellStyle',
             fontName='TimesNewRoman',
@@ -258,6 +246,191 @@ def overhaul_to_pdf(excel_file_path):
 
         content = []
 
+        for cursor in range(1, sheet.max_row + 1, 32):
+
+            overhaul_data = []
+            end = cursor + 31
+            for row in range(cursor, end + 1):
+                row_data = []
+                for col in range(1, 56):
+                    cell_value = sheet.cell(row=row, column=col).value
+                    row_data.append(cell_value)
+                overhaul_data.append(row_data)
+
+            table_data: list[list[Any]] = [[None for _ in range(17)] for _ in range(19)]
+
+            table_data[0][0] = Paragraph(str(overhaul_data[0][0]), center_cell_style_bold)
+
+            table_data[1][0] = Paragraph(str(overhaul_data[2][0]), cell_style_bold)
+            table_data[1][1] = Paragraph(str(overhaul_data[2][2]), cell_style)
+            table_data[1][5] = Paragraph(str(overhaul_data[2][25]), cell_style_bold)
+            table_data[1][6] = Paragraph(str(overhaul_data[2][27]), cell_style)
+            table_data[1][7] = Paragraph("IMAGE", cell_style_bold)
+
+            table_data[2][0] = Paragraph(str(overhaul_data[3][0]), cell_style_bold)
+            table_data[2][1] = Paragraph(str(overhaul_data[3][1]) + " " + str(overhaul_data[3][6]), cell_style)
+            table_data[2][5] = Paragraph(str(overhaul_data[3][25]), cell_style_bold)
+            table_data[2][6] = Paragraph(str(overhaul_data[3][32]), cell_style_bold)
+            table_data[2][7] = Paragraph(str(overhaul_data[3][42]), cell_style_bold)
+            table_data[2][8] = Paragraph(str(overhaul_data[3][46]), cell_style_bold)
+            table_data[2][9] = Paragraph(str(overhaul_data[3][52]), cell_style_bold)
+
+            table_data[3][0] = Paragraph(str(overhaul_data[4][0]), cell_style_bold)
+            table_data[3][5] = Paragraph(str(overhaul_data[6][25]), cell_style)
+            table_data[3][6] = Paragraph(str(overhaul_data[6][32]), cell_style)
+            table_data[3][7] = Paragraph(str(overhaul_data[6][42]), cell_style)
+            table_data[3][8] = Paragraph(str(overhaul_data[6][46]), cell_style)
+            table_data[3][9] = Paragraph(str(overhaul_data[6][52]), cell_style)
+
+            table_data[4][0] = Paragraph(str(overhaul_data[5][0]), cell_style)
+            table_data[4][5] = Paragraph(str(overhaul_data[9][25]), cell_style_bold)
+
+            table_data[5][0] = Paragraph(str(overhaul_data[6][0]), cell_style_bold)
+            table_data[5][1] = Paragraph(str(overhaul_data[6][2]), cell_style)
+            table_data[5][5] = Paragraph(str(overhaul_data[10][25]), cell_style_bold)
+            table_data[5][7] = Paragraph(str(overhaul_data[10][32]), cell_style)
+
+            table_data[6][0] = Paragraph(str(overhaul_data[7][0]), cell_style_bold)
+            table_data[6][1] = Paragraph(str(overhaul_data[7][6]) + " " + str(overhaul_data[7][11]), cell_style)
+            table_data[6][2] = Paragraph(str(overhaul_data[7][15]), cell_style_bold)
+            table_data[6][3] = Paragraph(str(overhaul_data[7][21]) + " " + str(overhaul_data[7][23]), cell_style)
+            table_data[6][5] = Paragraph(str(overhaul_data[11][25]), cell_style_bold)
+            table_data[6][7] = Paragraph(str(overhaul_data[11][32]), cell_style)
+
+            table_data[7][0] = Paragraph(str(overhaul_data[8][0]), cell_style_bold)
+            table_data[7][1] = Paragraph(str(overhaul_data[8][7]), cell_style)
+            table_data[7][2] = Paragraph(str(overhaul_data[8][19]), cell_style_bold)
+            table_data[7][3] = Paragraph(str(overhaul_data[8][20]), cell_style)
+            table_data[7][5] = Paragraph(str(overhaul_data[12][25]), cell_style_bold)
+            table_data[7][7] = Paragraph(str(overhaul_data[12][32]), cell_style)
+
+            table_data[8][0] = Paragraph(str(overhaul_data[9][0]), cell_style_bold)
+            table_data[8][1] = Paragraph(str(overhaul_data[9][2]), cell_style)
+            table_data[8][5] = Paragraph(str(overhaul_data[13][25]), cell_style_bold)
+            table_data[8][7] = Paragraph(str(overhaul_data[13][32]), cell_style)
+
+            table_data[9][5] = Paragraph(str(overhaul_data[19][25]), cell_style_bold)
+            table_data[9][7] = Paragraph(str(overhaul_data[19][32]), cell_style_bold)
+
+            table_data[11][0] = Paragraph(str(overhaul_data[21][0]), cell_style_bold)
+            table_data[11][1] = Paragraph(str(overhaul_data[21][2]), cell_style)
+
+            table_data[12][0] = Paragraph(str(overhaul_data[22][0]), cell_style_bold)
+            table_data[12][1] = Paragraph(str(overhaul_data[22][7]), cell_style_bold)
+            table_data[12][2] = Paragraph(str(overhaul_data[22][9]), cell_style_bold)
+            table_data[12][6] = Paragraph(str(overhaul_data[22][15]), cell_style_bold)
+            table_data[12][7] = Paragraph(str(overhaul_data[22][17]), cell_style_bold)
+            table_data[12][9] = Paragraph(str(overhaul_data[22][21]), cell_style_bold)
+            table_data[12][10] = Paragraph(str(overhaul_data[22][24]), cell_style_bold)
+            table_data[12][11] = Paragraph(str(overhaul_data[22][27]), cell_style_bold)
+            table_data[12][12] = Paragraph(str(overhaul_data[22][30]), cell_style_bold)
+            table_data[12][13] = Paragraph(str(overhaul_data[22][32]), cell_style_bold)
+            table_data[12][14] = Paragraph(str(overhaul_data[22][34]), cell_style_bold)
+
+            table_data[13][14] = Paragraph(str(overhaul_data[24][34]), cell_style_bold)
+            table_data[13][15] = Paragraph(str(overhaul_data[24][36]), cell_style_bold)
+
+            table_data[14][2] = Paragraph(str(overhaul_data[25][9]), cell_style_bold)
+            table_data[14][3] = Paragraph(str(overhaul_data[25][11]), cell_style_bold)
+            table_data[14][4] = Paragraph(str(overhaul_data[25][12]), cell_style_bold)
+            table_data[14][5] = Paragraph(str(overhaul_data[25][14]), cell_style_bold)
+            table_data[14][7] = Paragraph(str(overhaul_data[25][17]), cell_style_bold)
+            table_data[14][8] = Paragraph(str(overhaul_data[25][19]), cell_style_bold)
+            table_data[14][15] = Paragraph(str(overhaul_data[25][36]), cell_style_bold)
+            table_data[14][16] = Paragraph(str(overhaul_data[25][38]), cell_style_bold)
+
+            table_data[15][0] = Paragraph(str(overhaul_data[27][0]), cell_style_bold)
+            table_data[15][1] = Paragraph(str(overhaul_data[27][7]), cell_style_bold)
+            table_data[15][2] = Paragraph(str(overhaul_data[27][9]), cell_style_bold)
+            table_data[15][4] = Paragraph(str(overhaul_data[27][12]), cell_style_bold)
+            table_data[15][6] = Paragraph(str(overhaul_data[27][15]), cell_style_bold)
+            table_data[15][7] = Paragraph(str(overhaul_data[27][17]), cell_style_bold)
+            table_data[15][8] = Paragraph(str(overhaul_data[27][19]), cell_style_bold)
+            table_data[15][9] = Paragraph(str(overhaul_data[27][21]), cell_style_bold)
+            table_data[15][10] = Paragraph(str(overhaul_data[27][24]), cell_style_bold)
+            table_data[15][11] = Paragraph(str(overhaul_data[27][27]), cell_style_bold)
+            table_data[15][12] = Paragraph(str(overhaul_data[27][30]), cell_style_bold)
+            table_data[15][13] = Paragraph(str(overhaul_data[27][32]), cell_style_bold)
+            table_data[15][14] = Paragraph(str(overhaul_data[27][34]), cell_style_bold)
+            table_data[15][15] = Paragraph(str(overhaul_data[27][36]), cell_style_bold)
+            table_data[15][16] = Paragraph(str(overhaul_data[27][38]), cell_style_bold)
+
+            table_data[16][0] = Paragraph(str(overhaul_data[28][0]), cell_style)
+            table_data[16][1] = Paragraph(str(overhaul_data[28][7]), cell_style)
+            table_data[16][2] = Paragraph(str(overhaul_data[28][9]), cell_style)
+            table_data[16][3] = Paragraph(str(overhaul_data[28][11]), cell_style)
+            table_data[16][4] = Paragraph(str(overhaul_data[28][12]), cell_style)
+            table_data[16][5] = Paragraph(str(overhaul_data[28][14]), cell_style)
+            table_data[16][6] = Paragraph(str(overhaul_data[28][15]), cell_style)
+            table_data[16][7] = Paragraph(str(overhaul_data[28][17]), cell_style)
+            table_data[16][8] = Paragraph(str(overhaul_data[28][19]), cell_style)
+            table_data[16][9] = Paragraph(str(overhaul_data[28][21]), cell_style)
+            table_data[16][10] = Paragraph(str(overhaul_data[28][24]), cell_style)
+            table_data[16][11] = Paragraph(str(overhaul_data[28][27]), cell_style)
+            table_data[16][12] = Paragraph(str(overhaul_data[28][30]), cell_style)
+            table_data[16][13] = Paragraph(str(overhaul_data[28][32]), cell_style)
+            table_data[16][14] = Paragraph(str(overhaul_data[28][34]), cell_style)
+            table_data[16][15] = Paragraph(str(overhaul_data[28][36]), cell_style)
+            table_data[16][16] = Paragraph(str(overhaul_data[28][38]), cell_style)
+
+            table_data[17][0] = Paragraph(str(overhaul_data[29][0]), cell_style_bold)
+            table_data[17][7] = Paragraph(str(overhaul_data[29][17]), cell_style_bold)
+            table_data[17][8] = Paragraph(str(overhaul_data[29][19]), cell_style_bold)
+            table_data[17][9] = Paragraph(str(overhaul_data[29][21]), cell_style_bold)
+            table_data[17][10] = Paragraph(str(overhaul_data[29][24]), cell_style_bold)
+            table_data[17][11] = Paragraph(str(overhaul_data[29][27]), cell_style_bold)
+            table_data[17][12] = Paragraph(str(overhaul_data[29][30]), cell_style_bold)
+            table_data[17][13] = Paragraph(str(overhaul_data[29][32]), cell_style_bold)
+            table_data[17][14] = Paragraph(str(overhaul_data[29][34]), cell_style_bold)
+
+            table_data[18][0] = str(overhaul_data[30][0])
+
+            table = Table(table_data, style=[
+                ('SPAN', (0, 0), (-1, 0)),
+                ('SPAN', (1, 1), (3, 1)),
+                ('SPAN', (6, 1), (9, 1)),
+                ('SPAN', (1, 2), (3, 2)),
+                ('SPAN', (0, 3), (3, 3)),
+                ('SPAN', (0, 4), (3, 4)),
+                ('SPAN', (5, 4), (9, 4)),
+                ('SPAN', (1, 5), (3, 5)),
+                ('SPAN', (5, 5), (6, 5)),
+                ('SPAN', (7, 5), (9, 5)),
+                ('SPAN', (5, 6), (6, 6)),
+                ('SPAN', (7, 6), (9, 6)),
+                ('SPAN', (5, 7), (6, 7)),
+                ('SPAN', (7, 7), (9, 7)),
+                ('SPAN', (1, 8), (3, 8)),
+                ('SPAN', (5, 8), (6, 8)),
+                ('SPAN', (7, 8), (9, 8)),
+                ('SPAN', (5, 9), (6, 9)),
+                ('SPAN', (7, 9), (9, 9)),
+                ('SPAN', (1, 11), (-1, 11)),
+                ('SPAN', (0, 12), (0, 14)),
+                ('SPAN', (1, 12), (1, 14)),
+                ('SPAN', (2, 12), (5, 13)),
+                ('SPAN', (6, 12), (6, 14)),
+                ('SPAN', (7, 12), (8, 13)),
+                ('SPAN', (9, 12), (9, 14)),
+                ('SPAN', (10, 12), (10, 14)),
+                ('SPAN', (11, 12), (11, 14)),
+                ('SPAN', (12, 12), (12, 14)),
+                ('SPAN', (13, 12), (13, 14)),
+                ('SPAN', (14, 12), (16, 12)),
+                ('SPAN', (14, 13), (14, 14)),
+                ('SPAN', (15, 13), (16, 13)),
+                ('SPAN', (2, 15), (3, 15)),
+                ('SPAN', (4, 15), (5, 15)),
+                ('SPAN', (0, 17), (6, 17)),
+                ('SPAN', (0, 18), (-1, 18)),
+                ('LEFTPADDING', (0, 0), (-1, -1), 2),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+                ('TOPPADDING', (0, 0), (-1, -1), 2),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ], colWidths=[80, 50, 50, 50, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40])
+            content.append(table)
+            content.append(PageBreak())
 
         pdf.build(content)
 
@@ -272,22 +445,11 @@ def overhaul_to_pdf(excel_file_path):
 
 
 def open_overhaul():
-    file_paths = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')], multiple=True)
-    if file_paths:
-        success_count = 0
-        error_count = 0
-        for file_path in file_paths:
-            pdf_file_path = debug_read_receipt(file_path)
-            if pdf_file_path:
-                success_count += 1
-            else:
-                error_count += 1
-        
-        if success_count > 0:
-            messagebox.showinfo("Success", f"Создано PDF файлов: {success_count}")
-        if error_count > 0:
-            messagebox.showwarning("Errors", f"Не удалось создать: {error_count} файлов")
-
+    file_path = filedialog.askopenfilename(filetypes=[('Excel file', '*.xlsx')])
+    if file_path:
+        pdf_file_path = overhaul_to_pdf(file_path)
+        if pdf_file_path:
+            messagebox.showinfo("Success", f"PDF создан: {pdf_file_path}")
 
 
 # Создание GUI

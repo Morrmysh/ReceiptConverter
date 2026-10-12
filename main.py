@@ -11,6 +11,7 @@ import os
 import datetime
 import sys
 import zipfile
+import io
 from typing import Any
 
 pdfmetrics.registerFont(TTFont('TimesNewRoman', 'assets/times.ttf'))
@@ -181,6 +182,23 @@ def receipt_to_pdf(excel_file_path):
 def open_receipt():
     file_paths = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')], multiple=True)
     if file_paths:
+        # Создаем окно загрузки
+        loading_window = tk.Toplevel(root)
+        loading_window.title("Обработка...")
+        loading_window.geometry("300x100")
+        loading_window.resizable(False, False)
+        
+        # Центрируем окно по экрану
+        center_window(loading_window)
+        loading_window.transient(root)
+        loading_window.grab_set()
+        
+        label = tk.Label(loading_window, text="Обработка Excel-файлов...", font=('Arial', 12))
+        label.pack(expand=True)
+        
+        # Обновляем GUI перед обработкой
+        root.update()
+        
         success_count = 0
         error_count = 0
         for file_path in file_paths:
@@ -189,6 +207,9 @@ def open_receipt():
                 success_count += 1
             else:
                 error_count += 1
+        
+        # Закрываем окно загрузки
+        loading_window.destroy()
         
         if success_count > 0:
             messagebox.showinfo("Success", f"Создано квитанций: {success_count}")
@@ -201,15 +222,16 @@ def overhaul_to_pdf(excel_file_path):
         wb = load_workbook(excel_file_path)
         sheet = wb.active
 
-        # Извлекаем QR-код из Excel через zipfile
+        # Извлекаем QR-код из Excel через zipfile в память
         qr_image = None
         with zipfile.ZipFile(excel_file_path, 'r') as zip_ref:
             media_files = [f for f in zip_ref.namelist() if f.startswith('xl/media/')]
             if media_files:
-                qr_temp_path = os.path.join(os.path.dirname(excel_file_path), "temp_qr.png")
-                with zip_ref.open(media_files[0]) as source, open(qr_temp_path, 'wb') as target:
-                    target.write(source.read())
-                qr_image = Image(qr_temp_path, width=152, height=152)
+                qr_bytes = io.BytesIO()
+                with zip_ref.open(media_files[0]) as source:
+                    qr_bytes.write(source.read())
+                qr_bytes.seek(0)
+                qr_image = Image(qr_bytes, width=152, height=152)
 
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
         output_folder = os.path.join(os.path.dirname(excel_file_path), "Квитанции капремонт от " + current_date)
@@ -490,10 +512,40 @@ def overhaul_to_pdf(excel_file_path):
         return None
 
 
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry(f'{width}x{height}+{x}+{y}')
+
+
 def open_overhaul():
     file_path = filedialog.askopenfilename(filetypes=[('Excel file', '*.xlsx')])
     if file_path:
+        # Создаем окно загрузки
+        loading_window = tk.Toplevel(root)
+        loading_window.title("Обработка...")
+        loading_window.geometry("300x100")
+        loading_window.resizable(False, False)
+        
+        # Центрируем окно по экрану
+        center_window(loading_window)
+        loading_window.transient(root)
+        loading_window.grab_set()
+        
+        label = tk.Label(loading_window, text="Работаю с файлом . . .", font=('Times New Roman', 10))
+        label.pack(expand=True)
+        
+        # Обновляем GUI перед обработкой
+        root.update()
+        
         pdf_file_path = overhaul_to_pdf(file_path)
+        
+        # Закрываем окно загрузки
+        loading_window.destroy()
+        
         if pdf_file_path:
             messagebox.showinfo("Success", f"PDF создан: {pdf_file_path}")
 
@@ -502,6 +554,7 @@ def open_overhaul():
 root = tk.Tk()
 root.title("Receipt Converter")
 root.geometry("300x150")
+center_window(root)
 
 # Кнопка для выбора файла
 overhaul_button = tk.Button(root, text="Капремонт", command=open_overhaul)

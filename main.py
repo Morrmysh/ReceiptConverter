@@ -496,7 +496,7 @@ def overhaul_to_pdf(excel_file_path):
                 ('BACKGROUND', (8, 10), (-1, 10), colors.lightgrey),
                 ('BACKGROUND', (15, 1), (16, 10), colors.lightgrey),
                 ('BACKGROUND', (15, 17), (16, 17), colors.lightgrey),
-            ], colWidths=[60, 40, 40, 40, 40, 40, 50, 50, 50, 55, 55, 65, 65, 50, 40, 40, 50])
+            ], colWidths=[60, 40, 40, 35, 40, 35, 45, 50, 50, 55, 55, 65, 65, 50, 40, 40, 45])
             content.append(table)
             content.append(PageBreak())
 
